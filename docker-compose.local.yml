@@ -1,0 +1,24 @@
+# Local override: same services/network/ports as docker-compose.yml, just
+# swaps the build target to "dev" and bind-mounts source for hot reload.
+# dev/prod modes use docker-compose.yml directly (no override) — see
+# start-dev.sh / start-prod.sh, which differ only by --env-file (i.e. by port).
+services:
+  backend:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - /app/node_modules
+
+  frontend:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.nuxt
