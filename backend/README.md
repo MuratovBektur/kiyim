@@ -15,7 +15,7 @@ npm run start:dev   # http://localhost:3001
 
 Это локальный запуск без Docker, для отладки в IDE. Для запуска через Docker
 (`local` с hot reload через `nest --watch`, либо `dev`/`prod` на собранном `dist`)
-см. `../README.md` и `../start-local.sh` / `../start-dev.sh` / `../start-prod.sh` —
+см. `../README.md` и `../restart-local.sh` / `../restart-dev.sh` / `../restart-prod.sh` —
 там backend поднимается вместе с frontend и nginx одной командой.
 
 ## Эндпоинты

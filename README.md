@@ -26,20 +26,23 @@
 | `prod`  | продакшен-сборка                | нет        | 8088 (`.env.prod`)   | `docker-compose.yml` |
 
 `dev` и `prod` используют **один и тот же** `docker-compose.yml` без каких-либо
-оверрайдов — единственная разница между запуском `start-dev.sh` и `start-prod.sh`
+оверрайдов — единственная разница между запуском `restart-dev.sh` и `restart-prod.sh`
 это `--env-file`, то есть порт. `local` — единственный режим, который реально
 отличается по сборке: `docker-compose.local.yml` подставляет `build.target: dev`
 и монтирует исходники для hot reload.
 
+`restart-*.sh` останавливают (`docker compose down`) и заново поднимают
+(`up`) контейнеры — используйте их вместо отдельных start/stop команд.
+
 ```bash
 # 1. Сначала должна быть поднята БД (создаёт сеть kiyim-network)
-cd ../database && ./start-local.sh   # или start-dev.sh / start-prod.sh
+cd ../database && ./restart-local.sh   # или restart-dev.sh / restart-prod.sh
 
 # 2. Запуск marketplace
 cd ../marketplace
-./start-local.sh   # http://localhost:8087, hot reload
-./start-dev.sh      # http://localhost:8089, собранные образы
-./start-prod.sh     # http://localhost:8088, собранные образы
+./restart-local.sh   # http://localhost:8087, hot reload
+./restart-dev.sh      # http://localhost:8089, собранные образы
+./restart-prod.sh     # http://localhost:8088, собранные образы
 ```
 
 API доступен на том же порту, что и фронтенд, через `/api/...`.

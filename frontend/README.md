@@ -14,6 +14,6 @@ npm run dev   # http://localhost:3000
 
 Это локальный запуск без Docker, для отладки в IDE. Для запуска через Docker
 (`local` с hot reload через Vite/`nuxt dev`, либо `dev`/`prod` на собранном
-`.output`) см. `../README.md` и `../start-local.sh` / `../start-dev.sh` /
-`../start-prod.sh` — фронтенд поднимается вместе с backend и nginx одной
+`.output`) см. `../README.md` и `../restart-local.sh` / `../restart-dev.sh` /
+`../restart-prod.sh` — фронтенд поднимается вместе с backend и nginx одной
 командой (порты 8087/8089/8088 соответственно).
