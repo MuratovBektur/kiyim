@@ -34,45 +34,48 @@ watch(mobileMenuOpen, (v) => {
 
       <div class="header__controls">
         <div class="header__search">
-          <span class="header__search-icon">⌕</span>
-          <input
-            type="text"
-            :value="search"
-            placeholder="Поиск товаров…"
-            class="header__search-input"
-            @input="onInput"
-          />
+          <svg class="header__search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <input type="text" :value="search" placeholder="Поиск товаров…" class="header__search-input"
+            @input="onInput" />
         </div>
-        <button type="button" class="header__btn-icon header__btn-search-mobile" aria-label="Поиск" @click="mobileSearchOpen = !mobileSearchOpen">⌕</button>
+        <button type="button" class="header__btn-icon header__btn-search-mobile" aria-label="Поиск"
+          @click="mobileSearchOpen = !mobileSearchOpen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
         <button type="button" class="header__btn-icon header__btn-wishlist" aria-label="Избранное">♡</button>
-        <button type="button" class="header__btn-cart">
-          <span class="header__cart-label-short">🛍 2</span>
-          <span class="header__cart-label-full">Корзина · 2</span>
+        <button type="button" class="header__btn-cart" aria-label="Корзина">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H6"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="10" cy="21" r="1.4" fill="currentColor" />
+            <circle cx="18" cy="21" r="1.4" fill="currentColor" />
+          </svg>
+          <span class="header__cart-badge">2</span>
         </button>
       </div>
     </div>
 
     <div v-if="mobileSearchOpen" class="header__mobile-search">
       <div class="header__mobile-search-bar">
-        <span class="header__search-icon">⌕</span>
-        <input
-          type="text"
-          :value="search"
-          placeholder="Поиск товаров…"
-          class="header__search-input"
-          @input="onInput"
-        />
+        <svg class="header__search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+          <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <input type="text" :value="search" placeholder="Поиск товаров…" class="header__search-input" @input="onInput" />
         <button type="button" class="header__mobile-search-close" @click="mobileSearchOpen = false">✕</button>
       </div>
     </div>
   </header>
 
   <Teleport to="body">
-    <div
-      class="nav-drawer__overlay"
-      :class="{ 'nav-drawer__overlay--open': mobileMenuOpen }"
-      @click="mobileMenuOpen = false"
-    />
+    <div class="nav-drawer__overlay" :class="{ 'nav-drawer__overlay--open': mobileMenuOpen }"
+      @click="mobileMenuOpen = false" />
     <aside class="nav-drawer" :class="{ 'nav-drawer--open': mobileMenuOpen }">
       <div class="nav-drawer__head">
         <span class="nav-drawer__logo">kiy<span>im</span></span>
@@ -94,7 +97,7 @@ watch(mobileMenuOpen, (v) => {
   position: sticky;
   top: 0;
   z-index: 30;
-  background-color: rgba($ink-900, 0.8);
+  background-color: rgba($main-bg, 0.8);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
@@ -123,9 +126,13 @@ watch(mobileMenuOpen, (v) => {
     flex-shrink: 0;
     transition: color 0.2s;
 
-    &:hover { color: $lime-400; }
+    &:hover {
+      color: $lime-400;
+    }
 
-    @include r($bp-md) { display: none; }
+    @include r($bp-md) {
+      display: none;
+    }
   }
 
   &__logo {
@@ -135,9 +142,13 @@ watch(mobileMenuOpen, (v) => {
     white-space: nowrap;
     flex-shrink: 0;
 
-    @include r($bp-sm) { font-size: 1.5rem; }
+    @include r($bp-sm) {
+      font-size: 1.5rem;
+    }
 
-    span { color: $lime-400; }
+    span {
+      color: $lime-400;
+    }
   }
 
   &__nav {
@@ -145,7 +156,9 @@ watch(mobileMenuOpen, (v) => {
     align-items: center;
     gap: 2rem;
 
-    @include r($bp-md) { display: flex; }
+    @include r($bp-md) {
+      display: flex;
+    }
   }
 
   &__nav-link {
@@ -153,7 +166,10 @@ watch(mobileMenuOpen, (v) => {
     font-weight: 500;
     color: $stone-400;
     transition: color 0.2s;
-    &:hover { color: $lime-400; }
+
+    &:hover {
+      color: $lime-400;
+    }
   }
 
   &__controls {
@@ -163,7 +179,9 @@ watch(mobileMenuOpen, (v) => {
     flex: 1;
     justify-content: flex-end;
 
-    @include r($bp-sm) { gap: 0.75rem; }
+    @include r($bp-sm) {
+      gap: 0.75rem;
+    }
   }
 
   &__search {
@@ -175,13 +193,13 @@ watch(mobileMenuOpen, (v) => {
     width: 18rem;
     gap: 0.5rem;
 
-    @include r($bp-lg) { display: flex; }
+    @include r($bp-lg) {
+      display: flex;
+    }
   }
 
   &__search-icon {
     color: $stone-500;
-    font-size: 1.1rem;
-    line-height: 1;
     flex-shrink: 0;
   }
 
@@ -192,7 +210,9 @@ watch(mobileMenuOpen, (v) => {
     font-size: 0.875rem;
     width: 100%;
 
-    &::placeholder { color: $stone-500; }
+    &::placeholder {
+      color: $stone-500;
+    }
   }
 
   &__btn-icon {
@@ -207,52 +227,68 @@ watch(mobileMenuOpen, (v) => {
     @include glass;
     transition: border-color 0.2s;
 
-    &:hover { border-color: rgba($lime-400, 0.5); }
+    &:hover {
+      border-color: rgba($lime-400, 0.5);
+    }
   }
 
   &__btn-search-mobile {
-    @include r($bp-lg) { display: none; }
+    @include r($bp-lg) {
+      display: none;
+    }
   }
 
   &__btn-wishlist {
     display: none;
-    @include r($bp-sm) { display: flex; }
-  }
-
-  &__btn-cart {
-    height: 2.5rem;
-    padding-inline: 0.75rem;
-    border-radius: 999px;
-    background-color: $lime-400;
-    color: $ink-900;
-    font-weight: 700;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: background-color 0.2s;
-
-    &:hover { background-color: $lime-300; }
 
     @include r($bp-sm) {
-      padding-inline: 1rem;
-      font-size: 0.875rem;
+      display: flex;
     }
   }
 
-  &__cart-label-short {
-    @include r($bp-sm) { display: none; }
+  &__btn-cart {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: $lime-400;
+    color: $ink-900;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: $lime-300;
+    }
   }
 
-  &__cart-label-full {
-    display: none;
-    @include r($bp-sm) { display: inline; }
+  &__cart-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding-inline: 0.2rem;
+    border-radius: 999px;
+    background-color: $ink-900;
+    color: $lime-400;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
   }
 
   &__mobile-search {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0.75rem 1rem;
 
-    @include r($bp-lg) { display: none; }
+    @include r($bp-lg) {
+      display: none;
+    }
   }
 
   &__mobile-search-bar {
@@ -282,7 +318,9 @@ watch(mobileMenuOpen, (v) => {
     pointer-events: none;
     transition: opacity 0.3s;
 
-    @include r($bp-md) { display: none; }
+    @include r($bp-md) {
+      display: none;
+    }
 
     &--open {
       opacity: 1;
@@ -305,9 +343,13 @@ watch(mobileMenuOpen, (v) => {
   transform: translateX(-100%);
   transition: transform 0.3s ease;
 
-  @include r($bp-md) { display: none; }
+  @include r($bp-md) {
+    display: none;
+  }
 
-  &--open { transform: translateX(0); }
+  &--open {
+    transform: translateX(0);
+  }
 
   &__head {
     display: flex;
@@ -319,7 +361,10 @@ watch(mobileMenuOpen, (v) => {
   &__logo {
     font-size: 1.25rem;
     font-weight: 700;
-    span { color: $lime-400; }
+
+    span {
+      color: $lime-400;
+    }
   }
 
   &__close {
