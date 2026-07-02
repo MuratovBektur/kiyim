@@ -27,9 +27,7 @@ watch(mobileMenuOpen, (v) => {
       <NuxtLink to="/" class="header__logo">kiy<span>im</span></NuxtLink>
 
       <nav class="header__nav">
-        <NuxtLink to="/" class="header__nav-link">Каталог</NuxtLink>
-        <a href="#" class="header__nav-link">Дропы</a>
-        <a href="#" class="header__nav-link">Бренды</a>
+        <!-- <a href="#" class="header__nav-link">Бренды</a> -->
         <NuxtLink to="/about" class="header__nav-link">О нас</NuxtLink>
         <NuxtLink to="/contacts" class="header__nav-link">Контакты</NuxtLink>
       </nav>
@@ -53,8 +51,8 @@ watch(mobileMenuOpen, (v) => {
         <button type="button" class="header__btn-icon header__btn-wishlist" aria-label="Избранное">♡</button>
         <button type="button" class="header__btn-cart" aria-label="Корзина">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H6"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H6" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" />
             <circle cx="10" cy="21" r="1.4" fill="currentColor" />
             <circle cx="18" cy="21" r="1.4" fill="currentColor" />
           </svg>
@@ -85,9 +83,7 @@ watch(mobileMenuOpen, (v) => {
       </div>
       <nav class="nav-drawer__nav">
         <NuxtLink to="/" class="nav-drawer__link" @click="mobileMenuOpen = false">Каталог</NuxtLink>
-        <a href="#" class="nav-drawer__link">Дропы</a>
-        <a href="#" class="nav-drawer__link">Бренды</a>
-        <a href="#" class="nav-drawer__link">Избранное</a>
+        <!-- <a href="#" class="nav-drawer__link">Бренды</a> -->
         <NuxtLink to="/about" class="nav-drawer__link" @click="mobileMenuOpen = false">О нас</NuxtLink>
         <NuxtLink to="/contacts" class="nav-drawer__link" @click="mobileMenuOpen = false">Контакты</NuxtLink>
       </nav>
