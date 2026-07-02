@@ -30,6 +30,8 @@ watch(mobileMenuOpen, (v) => {
         <NuxtLink to="/" class="header__nav-link">Каталог</NuxtLink>
         <a href="#" class="header__nav-link">Дропы</a>
         <a href="#" class="header__nav-link">Бренды</a>
+        <NuxtLink to="/about" class="header__nav-link">О нас</NuxtLink>
+        <NuxtLink to="/contacts" class="header__nav-link">Контакты</NuxtLink>
       </nav>
 
       <div class="header__controls">
@@ -86,6 +88,8 @@ watch(mobileMenuOpen, (v) => {
         <a href="#" class="nav-drawer__link">Дропы</a>
         <a href="#" class="nav-drawer__link">Бренды</a>
         <a href="#" class="nav-drawer__link">Избранное</a>
+        <NuxtLink to="/about" class="nav-drawer__link" @click="mobileMenuOpen = false">О нас</NuxtLink>
+        <NuxtLink to="/contacts" class="nav-drawer__link" @click="mobileMenuOpen = false">Контакты</NuxtLink>
       </nav>
       <div class="nav-drawer__footer">kiyim · drop 04</div>
     </aside>
