@@ -239,11 +239,7 @@ watch(mobileMenuOpen, (v) => {
   }
 
   &__btn-wishlist {
-    display: none;
-
-    @include r($bp-sm) {
-      display: flex;
-    }
+    display: flex;
   }
 
   &__btn-cart {
