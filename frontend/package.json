@@ -15,8 +15,9 @@
     "vue-router": "^4.4.0"
   },
   "devDependencies": {
-    "sass": "^1.77.0",
     "@types/node": "^26.0.1",
+    "sass": "^1.77.0",
+    "sass-embedded": "^1.100.0",
     "vue-tsc": "^3.3.5"
   }
 }
