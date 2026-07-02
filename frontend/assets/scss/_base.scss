@@ -13,7 +13,7 @@ html {
 }
 
 body {
-  background-color: $ink-900;
+  background-color: $main-bg;
   color: $stone-200;
   min-height: 100vh;
 
@@ -24,7 +24,7 @@ body {
 
 ::selection {
   background-color: $lime-500;
-  color: $ink-900;
+  color: $main-bg;
 }
 
 a {
