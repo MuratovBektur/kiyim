@@ -42,6 +42,13 @@ function state(ctx: BotContext): AddProductState {
 @Injectable()
 @Scene(ADD_PRODUCT_SCENE_ID)
 export class AddProductScene {
+  // Extra photos can arrive as a Telegram album — several `photo` updates
+  // in quick succession. Debounce the render so a whole batch collapses
+  // into a single modal instead of flashing through one per photo (and
+  // instead of two renders racing on the same stale currentStepMessageId).
+  private readonly extraPhotoRenderTimers = new Map<string, NodeJS.Timeout>();
+  private static readonly EXTRA_PHOTO_DEBOUNCE_MS = 700;
+
   constructor(
     private readonly products: ProductsBotService,
     private readonly presets: BotPresetsService,
@@ -64,6 +71,7 @@ export class AddProductScene {
   @Action('ap:back')
   async onBack(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     const s = state(ctx);
     if (s.stepIndex === 0) return;
     s.stepIndex -= 1;
@@ -90,6 +98,7 @@ export class AddProductScene {
   @Action('ap:cancel:yes')
   async onCancelYes(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     await this.cleanupMessages(ctx);
     await ctx.reply('Добавление товара отменено.');
     await ctx.scene.leave();
@@ -98,8 +107,14 @@ export class AddProductScene {
   @Action('ap:custom')
   async onCustom(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
-    state(ctx).awaitingCustomInput = true;
-    await this.push(ctx, 'Введите свой вариант текстом:');
+    const s = state(ctx);
+    s.awaitingCustomInput = true;
+    const key = STEP_KEYS[s.stepIndex];
+    const isMulti = key === 'materials' || key === 'colors' || key === 'sizes';
+    await this.push(
+      ctx,
+      isMulti ? 'Введите свои варианты через запятую (можно несколько), например: Хлопок, Лён' : 'Введите свой вариант текстом:',
+    );
   }
 
   @Action(/^ap:pick:(\d+)$/)
@@ -145,6 +160,7 @@ export class AddProductScene {
   @Action('ap:skip')
   async onSkip(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     const s = state(ctx);
     const key = STEP_KEYS[s.stepIndex];
     if (key === 'description') {
@@ -161,18 +177,21 @@ export class AddProductScene {
   @Action('ap:photo:done')
   async onPhotoDone(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     await this.showExtraPhotosConfirmation(ctx);
   }
 
   @Action('ap:photo:confirm')
   async onPhotoConfirm(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     await this.finish(ctx);
   }
 
   @Action('ap:photo:more')
   async onPhotoMore(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     await this.clearExtraPhotosConfirmation(ctx);
     await this.renderExtraPhotosStep(ctx);
   }
@@ -180,6 +199,7 @@ export class AddProductScene {
   @Action('ap:photo:undo')
   async onPhotoUndo(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
+    this.cancelExtraPhotosRender(ctx);
     await this.clearExtraPhotosConfirmation(ctx);
     state(ctx).extraPhotoFileIds.pop();
     await this.renderExtraPhotosStep(ctx);
@@ -220,7 +240,33 @@ export class AddProductScene {
       }
       await this.clearExtraPhotosConfirmation(ctx);
       s.extraPhotoFileIds.push(fileId);
-      await this.renderExtraPhotosStep(ctx);
+      this.scheduleExtraPhotosRender(ctx);
+    }
+  }
+
+  // Collapses a burst of photos (e.g. a Telegram album) into a single
+  // render: each new photo resets the timer, so only the last one in a
+  // batch actually deletes the old modal and shows the new one.
+  private scheduleExtraPhotosRender(ctx: BotContext) {
+    const chatKey = String(ctx.chat!.id);
+    const existing = this.extraPhotoRenderTimers.get(chatKey);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.extraPhotoRenderTimers.delete(chatKey);
+      this.renderExtraPhotosStep(ctx).catch(() => undefined);
+    }, AddProductScene.EXTRA_PHOTO_DEBOUNCE_MS);
+    this.extraPhotoRenderTimers.set(chatKey, timer);
+  }
+
+  // Prevents a pending debounced render from firing after the user has
+  // already moved on (pressed Готово/Убрать/Назад/Отмена), which would
+  // otherwise redraw the collecting view on top of wherever they navigated.
+  private cancelExtraPhotosRender(ctx: BotContext) {
+    const chatKey = String(ctx.chat!.id);
+    const existing = this.extraPhotoRenderTimers.get(chatKey);
+    if (existing) {
+      clearTimeout(existing);
+      this.extraPhotoRenderTimers.delete(chatKey);
     }
   }
 
@@ -244,13 +290,13 @@ export class AddProductScene {
         for (const value of values) {
           if (!list.includes(value)) list.push(value);
         }
-        if (key === 'materials') {
-          for (const value of values) await this.presets.remember('material', value);
-        }
+        const presetKind = key === 'materials' ? 'material' : key === 'colors' ? 'color' : 'size';
+        const presetScope = key === 'sizes' ? s.categorySlug : undefined;
+        for (const value of values) await this.presets.remember(presetKind, value, presetScope);
         await this.renderStep(ctx);
         return;
       }
-      await this.applyAnswer(ctx, text);
+      await this.applyAnswer(ctx, text, true);
       return;
     }
 
@@ -282,7 +328,11 @@ export class AddProductScene {
     return s.sizes;
   }
 
-  private async applyAnswer(ctx: BotContext, value: string) {
+  // isCustom is only true when the value came from "✏️ Свой вариант" text
+  // input — picks from the existing preset buttons must NOT be remembered
+  // again, or every category's subtype list ends up bleeding into every
+  // other one (they share the same preset store, keyed by category below).
+  private async applyAnswer(ctx: BotContext, value: string, isCustom = false) {
     const s = state(ctx);
     const key = STEP_KEYS[s.stepIndex];
 
@@ -295,15 +345,15 @@ export class AddProductScene {
       }
       case 'subtype':
         s.subtype = value;
-        await this.presets.remember('subtype', value);
+        if (isCustom) await this.presets.remember('subtype', value, s.categorySlug);
         break;
       case 'brand':
         s.brand = value;
-        await this.presets.remember('brand', value);
+        if (isCustom) await this.presets.remember('brand', value);
         break;
       case 'country':
         s.originCountry = value;
-        if (value !== OWN_PRODUCTION_LABEL) await this.presets.remember('country', value);
+        if (isCustom && value !== OWN_PRODUCTION_LABEL) await this.presets.remember('country', value);
         break;
       default:
         break;
@@ -441,7 +491,7 @@ export class AddProductScene {
         break;
       }
       case 'subtype': {
-        const custom = await this.presets.listCustom('subtype');
+        const custom = await this.presets.listCustom('subtype', s.categorySlug);
         const options = subtypesForCategory(s.categorySlug, custom);
         s.currentOptions = options;
         await this.pushOptions(ctx, 'Выберите подтип товара:', options);
@@ -474,19 +524,24 @@ export class AddProductScene {
         break;
       case 'materials': {
         const custom = await this.presets.listCustom('material');
-        const options = [...MATERIAL_PRESETS, ...custom.filter((v) => !MATERIAL_PRESETS.includes(v))];
+        const options = [...custom, ...MATERIAL_PRESETS.filter((v) => !custom.includes(v))];
         s.currentOptions = options;
         await this.pushMultiSelect(ctx, 'Выберите материалы:', options, s.materials);
         break;
       }
-      case 'colors':
-        s.currentOptions = COLOR_PRESETS;
-        await this.pushMultiSelect(ctx, 'Выберите цвета:', COLOR_PRESETS, s.colors);
+      case 'colors': {
+        const custom = await this.presets.listCustom('color');
+        const options = [...custom, ...COLOR_PRESETS.filter((v) => !custom.includes(v))];
+        s.currentOptions = options;
+        await this.pushMultiSelect(ctx, 'Выберите цвета:', options, s.colors);
         break;
+      }
       case 'sizes': {
         const grid = sizeGridForCategory(s.categorySlug);
-        s.currentOptions = grid;
-        await this.pushMultiSelect(ctx, 'Выберите размеры:', grid, s.sizes);
+        const custom = await this.presets.listCustom('size', s.categorySlug);
+        const options = [...custom, ...grid.filter((v) => !custom.includes(v))];
+        s.currentOptions = options;
+        await this.pushMultiSelect(ctx, 'Выберите размеры:', options, s.sizes);
         break;
       }
       case 'mainPhoto':
@@ -537,22 +592,37 @@ export class AddProductScene {
   private async renderExtraPhotosStep(ctx: BotContext) {
     const s = state(ctx);
     const count = s.extraPhotoFileIds.length;
-    const text =
-      count === 0
-        ? `Пришлите фотографии (до ${MAX_EXTRA_PHOTOS} штук).`
-        : `Добавлено фото: ${count}/${MAX_EXTRA_PHOTOS}. Пришлите ещё или нажмите «Готово».`;
 
-    const rows = [
+    const keyboard = Markup.inlineKeyboard(
       [
-        ...(count > 0 ? [Markup.button.callback('✅ Готово', 'ap:photo:done')] : []),
-        Markup.button.callback('⏭ Пропустить', 'ap:skip'),
-      ],
-      count > 0 ? [Markup.button.callback('↩️ Убрать последнее', 'ap:photo:undo')] : [],
-      this.backRow(ctx),
-      this.cancelRow(),
-    ].filter((r) => r.length);
+        [
+          ...(count > 0 ? [Markup.button.callback('✅ Готово', 'ap:photo:done')] : []),
+          Markup.button.callback('⏭ Пропустить', 'ap:skip'),
+        ],
+        count > 0 ? [Markup.button.callback('↩️ Убрать последнее', 'ap:photo:undo')] : [],
+        this.backRow(ctx),
+        this.cancelRow(),
+      ].filter((r) => r.length),
+    );
 
-    await this.push(ctx, text, Markup.inlineKeyboard(rows));
+    if (count === 0) {
+      await this.push(ctx, `Пришлите фотографии (до ${MAX_EXTRA_PHOTOS} штук).`, keyboard);
+      return;
+    }
+
+    // Confirmation modal for the photo just added — the previous one is
+    // removed and a new one appears at the bottom for each new photo.
+    if (s.currentStepMessageId) {
+      await ctx.deleteMessage(s.currentStepMessageId).catch(() => undefined);
+      s.currentStepMessageId = undefined;
+    }
+    const lastPhoto = s.extraPhotoFileIds[count - 1];
+    const message = await ctx.replyWithPhoto(lastPhoto, {
+      caption: `Фото добавлено (${count}/${MAX_EXTRA_PHOTOS}). Пришлите следующее или нажмите «Готово».`,
+      ...keyboard,
+    });
+    s.messageIds.push(message.message_id);
+    s.currentStepMessageId = message.message_id;
   }
 
   // The single confirmation "modal" shown once, after the user presses

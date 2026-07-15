@@ -157,7 +157,7 @@ export class EditProductScene {
     if (!name) return;
     const category = await this.products.findOrCreateCategory(name);
 
-    const custom = await this.presets.listCustom('subtype');
+    const custom = await this.presets.listCustom('subtype', category.slug);
     const options = subtypesForCategory(category.slug, custom);
     s.currentOptions = options;
     const rows = this.pairRows(options, (i) => `ep:pick:subtype:${i}:${category.id}`);
@@ -176,8 +176,9 @@ export class EditProductScene {
     const sellerId = this.sellerId(ctx);
     if (!subtype || !sellerId) return;
 
+    // Always picked from the preset list here (no custom-subtype input flow
+    // in this scene), so nothing new to remember.
     await this.products.update(sellerId, s.productId, { categoryId, subtype });
-    await this.presets.remember('subtype', subtype);
     await this.renderMenu(ctx, 'Категория и подтип обновлены.');
   }
 
@@ -297,10 +298,15 @@ export class EditProductScene {
   private async optionsFor(kind: 'materials' | 'colors' | 'sizes', product: Product): Promise<string[]> {
     if (kind === 'materials') {
       const custom = await this.presets.listCustom('material');
-      return [...MATERIAL_PRESETS, ...custom.filter((v) => !MATERIAL_PRESETS.includes(v))];
+      return [...custom, ...MATERIAL_PRESETS.filter((v) => !custom.includes(v))];
     }
-    if (kind === 'colors') return COLOR_PRESETS;
-    return sizeGridForCategory(product.category?.slug);
+    if (kind === 'colors') {
+      const custom = await this.presets.listCustom('color');
+      return [...custom, ...COLOR_PRESETS.filter((v) => !custom.includes(v))];
+    }
+    const grid = sizeGridForCategory(product.category?.slug);
+    const custom = await this.presets.listCustom('size', product.category?.slug);
+    return [...custom, ...grid.filter((v) => !custom.includes(v))];
   }
 
   private async renderMultiSelect(ctx: BotContext, kind: 'materials' | 'colors' | 'sizes', product: Product) {
@@ -491,10 +497,10 @@ export class EditProductScene {
       for (const value of values) {
         if (!list.includes(value)) list.push(value);
       }
-      if (kind === 'materials') {
-        for (const value of values) await this.presets.remember('material', value);
-      }
       const product = await this.loadProduct(ctx);
+      const presetKind = kind === 'materials' ? 'material' : kind === 'colors' ? 'color' : 'size';
+      const presetScope = kind === 'sizes' ? product?.category?.slug : undefined;
+      for (const value of values) await this.presets.remember(presetKind, value, presetScope);
       if (product) await this.renderMultiSelect(ctx, kind, product);
       return;
     }
