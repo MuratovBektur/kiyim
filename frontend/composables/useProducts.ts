@@ -19,6 +19,13 @@ function apiBase(): string {
   return import.meta.server ? config.apiBaseServer : config.public.apiBase;
 }
 
+// Product photos uploaded via the Telegram bot are stored as backend-relative
+// paths (`/uploads/...`); seed/demo products still use absolute picsum URLs.
+export function resolvePhotoUrl(path: string | undefined | null): string | undefined {
+  if (!path) return undefined;
+  return path.startsWith('/uploads/') ? `${apiBase()}${path}` : path;
+}
+
 export function useProductsList(filters: Ref<ProductFilters> | ComputedRef<ProductFilters>) {
   return useFetch<ProductsResponse>(() => `${apiBase()}/products`, {
     query: filters,

@@ -27,7 +27,7 @@ defineProps<{ featuredProduct?: Product }>();
       <div class="hero__visual">
         <div class="hero__image-wrap">
           <img
-            :src="featuredProduct?.imageUrl ?? 'https://picsum.photos/seed/kiyim-hero/600/700'"
+            :src="resolvePhotoUrl(featuredProduct?.photos[0]) ?? 'https://picsum.photos/seed/kiyim-hero/600/700'"
             :alt="featuredProduct?.title ?? 'kiyim'"
             class="hero__image"
           />

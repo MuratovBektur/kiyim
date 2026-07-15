@@ -11,6 +11,10 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://kiyim:kiyim@postgres:5432/kiyim?schema=public}
       PORT: 3001
       FRONTEND_URL: ${PUBLIC_URL:-http://localhost:8088}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      ALLOWED_PHONES: ${ALLOWED_PHONES:-}
+    volumes:
+      - backend-uploads:/app/uploads
     networks:
       - kiyim-network
     restart: unless-stopped
@@ -40,6 +44,9 @@ services:
     networks:
       - kiyim-network
     restart: unless-stopped
+
+volumes:
+  backend-uploads:
 
 networks:
   kiyim-network:

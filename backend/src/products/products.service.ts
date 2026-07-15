@@ -1,49 +1,49 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Product } from './product.entity';
 import { FindProductsDto } from './find-products.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@InjectRepository(Product) private readonly productRepo: Repository<Product>) {}
 
   async findAll(query: FindProductsDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
-    const where: Prisma.ProductWhereInput = {
-      ...(query.search && {
-        title: { contains: query.search, mode: 'insensitive' },
-      }),
-      ...(query.categorySlug && { category: { slug: query.categorySlug } }),
-      ...(query.sellerSlug && { seller: { slug: query.sellerSlug } }),
-      ...(query.minPrice !== undefined || query.maxPrice !== undefined
-        ? {
-            price: {
-              ...(query.minPrice !== undefined && { gte: query.minPrice }),
-              ...(query.maxPrice !== undefined && { lte: query.maxPrice }),
-            },
-          }
-        : {}),
-    };
+    const qb = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.seller', 'seller')
+      .leftJoinAndSelect('product.category', 'category');
 
-    const orderBy: Prisma.ProductOrderByWithRelationInput =
-      query.sort === 'price_asc'
-        ? { price: 'asc' }
-        : query.sort === 'price_desc'
-          ? { price: 'desc' }
-          : { createdAt: 'desc' };
+    if (query.search) {
+      qb.andWhere('product.title ILIKE :search', { search: `%${query.search}%` });
+    }
+    if (query.categorySlug) {
+      qb.andWhere('category.slug = :categorySlug', { categorySlug: query.categorySlug });
+    }
+    if (query.sellerSlug) {
+      qb.andWhere('seller.slug = :sellerSlug', { sellerSlug: query.sellerSlug });
+    }
+    if (query.minPrice !== undefined) {
+      qb.andWhere('product.price >= :minPrice', { minPrice: query.minPrice });
+    }
+    if (query.maxPrice !== undefined) {
+      qb.andWhere('product.price <= :maxPrice', { maxPrice: query.maxPrice });
+    }
 
-    const [items, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-        include: { seller: true, category: true },
-      }),
-      this.prisma.product.count({ where }),
-    ]);
+    if (query.sort === 'price_asc') {
+      qb.orderBy('product.price', 'ASC');
+    } else if (query.sort === 'price_desc') {
+      qb.orderBy('product.price', 'DESC');
+    } else {
+      qb.orderBy('product.createdAt', 'DESC');
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
 
     return {
       items,
@@ -55,9 +55,9 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.prisma.product.findUnique({
+    const product = await this.productRepo.findOne({
       where: { id },
-      include: { seller: true, category: true },
+      relations: { seller: true, category: true },
     });
     if (!product) {
       throw new NotFoundException(`Товар с id "${id}" не найден`);

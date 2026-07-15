@@ -11,7 +11,7 @@ defineProps<{ product: Product }>();
   >
     <div class="product-card__image-wrap">
       <span v-if="!product.inStock" class="product-card__badge">Нет в наличии</span>
-      <img :src="product.imageUrl ?? undefined" :alt="product.title" class="product-card__image" />
+      <img :src="resolvePhotoUrl(product.photos[0])" :alt="product.title" class="product-card__image" />
     </div>
     <div class="product-card__info">
       <p class="product-card__seller">{{ product.seller.name }}</p>

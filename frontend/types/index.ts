@@ -5,6 +5,7 @@ export interface Seller {
   logoUrl?: string | null;
   description?: string | null;
   rating: number;
+  contactPhone?: string | null;
 }
 
 export interface Category {
@@ -19,11 +20,16 @@ export interface Product {
   description?: string | null;
   price: string;
   currency: string;
-  imageUrl?: string | null;
+  photos: string[];
+  extraPhotos: string[];
+  subtype?: string | null;
+  brand?: string | null;
+  originCountry?: string | null;
+  materials?: string[];
   sizes: string[];
   colors: string[];
   inStock: boolean;
-  sellerUrl: string;
+  sellerUrl?: string | null;
   sellerId: string;
   categoryId: string;
   seller: Seller;

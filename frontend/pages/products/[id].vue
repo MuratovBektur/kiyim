@@ -1,6 +1,20 @@
 <script setup lang="ts">
 const route = useRoute();
 const { data: product, pending, error } = await useProduct(route.params.id as string);
+
+const activePhotoIndex = ref(0);
+
+const allPhotos = computed(() => {
+  if (!product.value) return [];
+  return [product.value.photos[0], ...product.value.extraPhotos].filter((p): p is string => Boolean(p));
+});
+
+const activePhotoUrl = computed(() => resolvePhotoUrl(allPhotos.value[activePhotoIndex.value]));
+
+const whatsappUrl = computed(() => {
+  const phone = product.value?.seller.contactPhone;
+  return phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : undefined;
+});
 </script>
 
 <template>
@@ -12,9 +26,24 @@ const { data: product, pending, error } = await useProduct(route.params.id as st
       <div v-else-if="error || !product" class="pd__state pd__state--error">Товар не найден.</div>
 
       <div v-else class="pd__grid">
-        <div class="pd__image-wrap" :class="{ 'pd__image-wrap--oos': !product.inStock }">
-          <span v-if="!product.inStock" class="pd__oos-badge">Нет в наличии</span>
-          <img :src="product.imageUrl ?? undefined" :alt="product.title" class="pd__image" />
+        <div>
+          <div class="pd__image-wrap" :class="{ 'pd__image-wrap--oos': !product.inStock }">
+            <span v-if="!product.inStock" class="pd__oos-badge">Нет в наличии</span>
+            <img :src="activePhotoUrl" :alt="product.title" class="pd__image" />
+          </div>
+
+          <div v-if="allPhotos.length > 1" class="pd__thumbs">
+            <button
+              v-for="(photo, index) in allPhotos"
+              :key="photo"
+              type="button"
+              class="pd__thumb"
+              :class="{ 'pd__thumb--active': index === activePhotoIndex }"
+              @click="activePhotoIndex = index"
+            >
+              <img :src="resolvePhotoUrl(photo)" :alt="`${product.title} ${index + 1}`" />
+            </button>
+          </div>
         </div>
 
         <div class="pd__info">
@@ -46,8 +75,11 @@ const { data: product, pending, error } = await useProduct(route.params.id as st
             </div>
           </div>
 
-          <a :href="product.sellerUrl" target="_blank" rel="noopener noreferrer" class="pd__cta">
+          <a v-if="product.sellerUrl" :href="product.sellerUrl" target="_blank" rel="noopener noreferrer" class="pd__cta">
             Купить у продавца →
+          </a>
+          <a v-else-if="whatsappUrl" :href="whatsappUrl" target="_blank" rel="noopener noreferrer" class="pd__cta">
+            Написать в WhatsApp →
           </a>
         </div>
       </div>
@@ -116,6 +148,37 @@ const { data: product, pending, error } = await useProduct(route.params.id as st
     width: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  &__thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  &__thumb {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 2px solid transparent;
+    opacity: 0.6;
+    transition: opacity 0.2s, border-color 0.2s;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    &:hover { opacity: 0.9; }
+
+    &--active {
+      opacity: 1;
+      border-color: $lime-400;
+    }
   }
 
   &__title {
