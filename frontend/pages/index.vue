@@ -70,7 +70,7 @@ const featuredProduct = computed(() => productsData.value?.items[0]);
         <div v-if="pending" class="catalog-state">Загрузка…</div>
         <div v-else-if="!productsData?.items.length" class="catalog-state">Товары не найдены.</div>
         <div v-else class="catalog-grid">
-          <ProductCard v-for="product in productsData.items" :key="product.id" :product="product" />
+          <ProductCard v-for="(product, index) in productsData.items" :key="product.id" :product="product" :index="index" />
         </div>
 
         <Pagination v-if="productsData" v-model="page" :total-pages="productsData.totalPages" />

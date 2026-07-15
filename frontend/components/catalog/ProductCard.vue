@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { Product } from '~/types';
-defineProps<{ product: Product }>();
+
+const props = defineProps<{ product: Product; index?: number }>();
+
+// First row at normal desktop width (3-column catalog grid) loads eagerly;
+// everything below the fold is lazy.
+const CARDS_PER_ROW = 3;
+const loading = computed(() => ((props.index ?? CARDS_PER_ROW) < CARDS_PER_ROW ? 'eager' : 'lazy'));
 </script>
 
 <template>
@@ -11,7 +17,12 @@ defineProps<{ product: Product }>();
   >
     <div class="product-card__image-wrap">
       <span v-if="!product.inStock" class="product-card__badge">Нет в наличии</span>
-      <img :src="resolvePhotoUrl(product.photos[0])" :alt="product.title" class="product-card__image" />
+      <img
+        :src="photoVariantUrl(product.photos[0], 'card')"
+        :alt="product.title"
+        class="product-card__image"
+        :loading="loading"
+      />
     </div>
     <div class="product-card__info">
       <p class="product-card__seller">{{ product.seller.name }}</p>
@@ -34,7 +45,11 @@ defineProps<{ product: Product }>();
 
   &--oos { opacity: 0.6; }
 
-  &__image-wrap { position: relative; }
+  &__image-wrap {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+  }
 
   &__badge {
     position: absolute;
@@ -58,12 +73,12 @@ defineProps<{ product: Product }>();
   }
 
   &__image {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: 10rem;
+    height: 100%;
     object-fit: cover;
     display: block;
-
-    @include r($bp-sm) { height: 14rem; }
   }
 
   &__info {

@@ -133,18 +133,24 @@ export class BotUpdate implements OnModuleInit {
   async onCardNav(@Ctx() ctx: BotContext) {
     await ctx.answerCbQuery().catch(() => undefined);
     const offset = Number((ctx as any).match?.[1]);
-    await this.renderCard(ctx, offset, true);
+    await this.renderCard(ctx, offset);
   }
 
-  private async renderCard(ctx: BotContext, offset: number, edit = false) {
+  // Edits the same card message in place across navigation instead of
+  // sending a new one per product — tracked in session since /list runs
+  // outside any scene.
+  private async renderCard(ctx: BotContext, offset: number) {
     const sellerId = this.requireAuth(ctx);
     if (!sellerId) return;
+    const session = ctx.session as any;
     const { product, total } = await this.products.listForSeller(sellerId, Math.max(offset, 0));
 
     if (!product) {
-      const text = 'Каталог пуст. Используйте /add, чтобы добавить первый товар.';
-      if (edit) await ctx.editMessageText(text).catch(() => ctx.reply(text));
-      else await ctx.reply(text);
+      if (session.listCardMessageId) {
+        await ctx.deleteMessage(session.listCardMessageId).catch(() => undefined);
+        session.listCardMessageId = undefined;
+      }
+      await ctx.reply('Каталог пуст. Используйте /add, чтобы добавить первый товар.');
       return;
     }
 
@@ -167,16 +173,36 @@ export class BotUpdate implements OnModuleInit {
       [Markup.button.callback(product.isPublished ? '🔁 Переопубликовать' : '📤 Опубликовать', `publish_product:${product.id}`)],
     ]);
 
-    if (product.photos[0]) {
-      const buffer = await readUploadedFile(product.photos[0]);
-      if (buffer) {
-        await ctx.replyWithPhoto({ source: buffer }, { caption, parse_mode: 'HTML', ...keyboard });
-      } else {
-        await ctx.reply(caption, { parse_mode: 'HTML', ...keyboard });
+    const buffer = product.photos[0] ? await readUploadedFile(product.photos[0]) : null;
+
+    if (session.listCardMessageId) {
+      try {
+        if (buffer) {
+          await ctx.telegram.editMessageMedia(
+            ctx.chat!.id,
+            session.listCardMessageId,
+            undefined,
+            { type: 'photo', media: { source: buffer }, caption, parse_mode: 'HTML' },
+            { reply_markup: keyboard.reply_markup },
+          );
+        } else {
+          await ctx.telegram.editMessageCaption(ctx.chat!.id, session.listCardMessageId, undefined, caption, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard.reply_markup,
+          });
+        }
+        return;
+      } catch {
+        // message gone, or switched between photo/text card — send fresh below
+        await ctx.deleteMessage(session.listCardMessageId).catch(() => undefined);
+        session.listCardMessageId = undefined;
       }
-    } else {
-      await ctx.reply(caption, { parse_mode: 'HTML', ...keyboard });
     }
+
+    const message = buffer
+      ? await ctx.replyWithPhoto({ source: buffer }, { caption, parse_mode: 'HTML', ...keyboard })
+      : await ctx.reply(caption, { parse_mode: 'HTML', ...keyboard });
+    session.listCardMessageId = message.message_id;
   }
 
   // ---- edit / publish / delete actions (used from /list and post-creation cards) ----

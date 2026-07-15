@@ -9,7 +9,7 @@ const allPhotos = computed(() => {
   return [product.value.photos[0], ...product.value.extraPhotos].filter((p): p is string => Boolean(p));
 });
 
-const activePhotoUrl = computed(() => resolvePhotoUrl(allPhotos.value[activePhotoIndex.value]));
+const activePhotoUrl = computed(() => photoVariantUrl(allPhotos.value[activePhotoIndex.value], 'gallery'));
 
 const whatsappUrl = computed(() => {
   const phone = product.value?.seller.contactPhone;
@@ -41,7 +41,7 @@ const whatsappUrl = computed(() => {
               :class="{ 'pd__thumb--active': index === activePhotoIndex }"
               @click="activePhotoIndex = index"
             >
-              <img :src="resolvePhotoUrl(photo)" :alt="`${product.title} ${index + 1}`" />
+              <img :src="photoVariantUrl(photo, 'thumb')" :alt="`${product.title} ${index + 1}`" />
             </button>
           </div>
         </div>
@@ -123,9 +123,11 @@ const whatsappUrl = computed(() => {
 
   &__image-wrap {
     position: relative;
+    aspect-ratio: 3 / 4;
     border-radius: 1rem;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    outline: 1px solid rgba(255, 255, 255, 0.1);
+    outline-offset: -1px;
 
     &--oos { opacity: 0.6; }
   }
@@ -145,7 +147,10 @@ const whatsappUrl = computed(() => {
   }
 
   &__image {
+    position: absolute;
+    inset: 0;
     width: 100%;
+    height: 100%;
     object-fit: cover;
     display: block;
   }
@@ -153,20 +158,25 @@ const whatsappUrl = computed(() => {
   &__thumbs {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: 0.5rem;
     margin-top: 0.75rem;
   }
 
   &__thumb {
+    position: relative;
     width: 4rem;
-    height: 4rem;
+    aspect-ratio: 3 / 4;
     border-radius: 0.5rem;
     overflow: hidden;
-    border: 2px solid transparent;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
     opacity: 0.6;
-    transition: opacity 0.2s, border-color 0.2s;
+    transition: opacity 0.2s, outline-color 0.2s;
 
     img {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -177,7 +187,7 @@ const whatsappUrl = computed(() => {
 
     &--active {
       opacity: 1;
-      border-color: $lime-400;
+      outline-color: $lime-400;
     }
   }
 

@@ -13,7 +13,8 @@
     "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts",
     "migration:run:prod": "typeorm migration:run -d dist/data-source.js",
-    "seed": "ts-node src/database/seed.ts"
+    "seed": "ts-node src/database/seed.ts",
+    "backfill:photos": "node scripts/backfill-photo-variants.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",

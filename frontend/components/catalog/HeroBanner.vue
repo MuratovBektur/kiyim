@@ -27,7 +27,7 @@ defineProps<{ featuredProduct?: Product }>();
       <div class="hero__visual">
         <div class="hero__image-wrap">
           <img
-            :src="resolvePhotoUrl(featuredProduct?.photos[0]) ?? 'https://picsum.photos/seed/kiyim-hero/600/700'"
+            :src="photoVariantUrl(featuredProduct?.photos[0], 'gallery') ?? 'https://picsum.photos/seed/kiyim-hero/600/700'"
             :alt="featuredProduct?.title ?? 'kiyim'"
             class="hero__image"
           />
@@ -186,7 +186,8 @@ defineProps<{ featuredProduct?: Product }>();
     inset: 0;
     border-radius: 1.5rem;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    outline: 1px solid rgba(255, 255, 255, 0.1);
+    outline-offset: -1px;
     @include glass;
     @include glow;
     @include card-lift;
