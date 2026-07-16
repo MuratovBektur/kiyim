@@ -35,6 +35,19 @@ export class Seller {
   @Column({ type: 'text', nullable: true })
   telegramChatTitle: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  whatsapp: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  telegramContact: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  instagram: string | null;
+
+  // Can onboard brand-new seller businesses from the bot (⚙️ Настройки → 🔐 Доступ → 🆕 Завести нового продавца).
+  @Column({ default: false })
+  isAdmin: boolean;
+
   @OneToMany(() => Product, (product) => product.seller)
   products: Product[];
 

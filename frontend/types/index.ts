@@ -6,6 +6,9 @@ export interface Seller {
   description?: string | null;
   rating: number;
   contactPhone?: string | null;
+  whatsapp?: string | null;
+  telegramContact?: string | null;
+  instagram?: string | null;
 }
 
 export interface Category {

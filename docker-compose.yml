@@ -13,6 +13,8 @@ services:
       FRONTEND_URL: ${PUBLIC_URL:-http://localhost:8088}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       ALLOWED_PHONES: ${ALLOWED_PHONES:-}
+      SELLER_PROFILES: ${SELLER_PROFILES:-}
+      BOT_ADMIN_SELLER_SLUGS: ${BOT_ADMIN_SELLER_SLUGS:-}
     volumes:
       - backend-uploads:/app/uploads
     networks:

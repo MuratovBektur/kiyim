@@ -12,6 +12,7 @@ import { BotAuthService } from './auth/bot-auth.service';
 import { BotPresetsService } from './bot-presets.service';
 import { ImageService } from './image.service';
 import { ProductsBotService } from './products-bot.service';
+import { AdminSellersService } from './admin-sellers.service';
 import { TelegramPublishService } from './telegram-publish.service';
 import { AddProductScene } from './scenes/add-product.wizard';
 import { EditProductScene } from './scenes/edit-product.scene';
@@ -32,6 +33,7 @@ import { BotUpdate } from './bot.update';
     BotPresetsService,
     ImageService,
     ProductsBotService,
+    AdminSellersService,
     TelegramPublishService,
     AddProductScene,
     EditProductScene,

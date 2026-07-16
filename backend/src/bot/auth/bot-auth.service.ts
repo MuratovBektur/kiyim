@@ -5,6 +5,7 @@ import { BotAuthorizedUser } from '../entities/bot-authorized-user.entity';
 import { BotAllowedPhone } from '../entities/bot-allowed-phone.entity';
 import { Seller } from '../../sellers/seller.entity';
 import { slugify } from '../config/translit';
+import { normalizeInstagram, normalizeTelegram, normalizeWhatsapp } from '../config/contact-links';
 
 export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '');
@@ -18,6 +19,13 @@ export interface PhoneLookupResult {
 interface EnvPhoneEntry {
   sellerSlug: string;
   sellerName: string;
+}
+
+interface EnvSellerProfile {
+  whatsapp?: string;
+  telegramContact?: string;
+  instagram?: string;
+  description?: string;
 }
 
 @Injectable()
@@ -35,6 +43,7 @@ export class BotAuthService implements OnModuleInit {
     for (const user of users) {
       this.authorized.set(user.telegramId, user.sellerId);
     }
+    await this.applyEnvSellerDefaults();
   }
 
   isAuthorized(telegramId: string | number): boolean {
@@ -43,6 +52,18 @@ export class BotAuthService implements OnModuleInit {
 
   getSellerId(telegramId: string | number): string | undefined {
     return this.authorized.get(String(telegramId));
+  }
+
+  async isAdmin(sellerId: string): Promise<boolean> {
+    const seller = await this.sellerRepo.findOne({ where: { id: sellerId } });
+    return seller?.isAdmin ?? false;
+  }
+
+  /** Deauthorizes every bot user tied to a seller — call right after deleting that seller. */
+  revokeSeller(sellerId: string): void {
+    for (const [telegramId, sid] of this.authorized.entries()) {
+      if (sid === sellerId) this.authorized.delete(telegramId);
+    }
   }
 
   /**
@@ -63,6 +84,83 @@ export class BotAuthService implements OnModuleInit {
     return map;
   }
 
+  /**
+   * SELLER_PROFILES=sellerSlug|whatsapp|telegram|instagram|description;... —
+   * bootstraps contact links/description for a seller identified by slug.
+   * Fields left empty are skipped. Only fills in columns still empty in the
+   * DB (see applySellerEnvDefaults) so bot-made edits are never overwritten.
+   */
+  private envSellerProfiles(): Map<string, EnvSellerProfile> {
+    const raw = process.env.SELLER_PROFILES ?? '';
+    const map = new Map<string, EnvSellerProfile>();
+    for (const entry of raw.split(';')) {
+      const [sellerSlugRaw, whatsapp, telegramContact, instagram, description] = entry.split('|').map((part) => part?.trim());
+      const sellerSlug = sellerSlugRaw ? slugify(sellerSlugRaw) : undefined;
+      if (!sellerSlug) continue;
+      map.set(sellerSlug, {
+        whatsapp: whatsapp || undefined,
+        telegramContact: telegramContact || undefined,
+        instagram: instagram || undefined,
+        description: description || undefined,
+      });
+    }
+    return map;
+  }
+
+  /** BOT_ADMIN_SELLER_SLUGS=slug1,slug2 — grants the "can onboard new sellers" flag. */
+  private envAdminSlugs(): Set<string> {
+    const raw = process.env.BOT_ADMIN_SELLER_SLUGS ?? '';
+    return new Set(
+      raw
+        .split(',')
+        .map((slug) => slugify(slug.trim()))
+        .filter(Boolean),
+    );
+  }
+
+  /** Applies env-configured profile/admin defaults for one seller, without overwriting existing values. */
+  private async applySellerEnvDefaults(seller: Seller): Promise<void> {
+    const profile = this.envSellerProfiles().get(seller.slug);
+    const shouldBeAdmin = this.envAdminSlugs().has(seller.slug);
+    let dirty = false;
+
+    if (profile) {
+      if (!seller.whatsapp && profile.whatsapp) {
+        seller.whatsapp = normalizeWhatsapp(profile.whatsapp);
+        dirty = true;
+      }
+      if (!seller.telegramContact && profile.telegramContact) {
+        seller.telegramContact = normalizeTelegram(profile.telegramContact);
+        dirty = true;
+      }
+      if (!seller.instagram && profile.instagram) {
+        seller.instagram = normalizeInstagram(profile.instagram);
+        dirty = true;
+      }
+      if (!seller.description && profile.description) {
+        seller.description = profile.description;
+        dirty = true;
+      }
+    }
+
+    if (shouldBeAdmin && !seller.isAdmin) {
+      seller.isAdmin = true;
+      dirty = true;
+    }
+
+    if (dirty) await this.sellerRepo.save(seller);
+  }
+
+  /** Runs at boot so slugs already in the DB pick up new env-configured profile/admin defaults. */
+  private async applyEnvSellerDefaults(): Promise<void> {
+    const slugs = new Set([...this.envSellerProfiles().keys(), ...this.envAdminSlugs()]);
+    if (!slugs.size) return;
+    const sellers = await this.sellerRepo.find({ where: [...slugs].map((slug) => ({ slug })) });
+    for (const seller of sellers) {
+      await this.applySellerEnvDefaults(seller);
+    }
+  }
+
   async findSellerForPhone(rawPhone: string): Promise<PhoneLookupResult | null> {
     const phone = normalizePhone(rawPhone);
 
@@ -77,6 +175,7 @@ export class BotAuthService implements OnModuleInit {
     let seller = await this.sellerRepo.findOne({ where: { slug: envEntry.sellerSlug } });
     if (!seller) {
       seller = await this.sellerRepo.save(this.sellerRepo.create({ name: envEntry.sellerName, slug: envEntry.sellerSlug }));
+      await this.applySellerEnvDefaults(seller);
     }
     return { sellerId: seller.id, sellerName: seller.name };
   }
@@ -124,6 +223,7 @@ export class BotAuthService implements OnModuleInit {
       slug = `${baseSlug}-${suffix}`;
     }
     const seller = await this.sellerRepo.save(this.sellerRepo.create({ name: sellerName, slug }));
+    await this.applySellerEnvDefaults(seller);
     await this.addAllowedPhone(phone, seller.id);
     return seller;
   }
