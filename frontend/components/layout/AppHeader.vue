@@ -2,6 +2,7 @@
 const search = useState<string>('catalogSearch', () => '');
 const mobileMenuOpen = ref(false);
 const mobileSearchOpen = ref(false);
+const { count: cartCount } = useCart();
 
 let debounceTimer: ReturnType<typeof setTimeout>;
 function onInput(e: Event) {
@@ -49,15 +50,17 @@ watch(mobileMenuOpen, (v) => {
           </svg>
         </button>
         <button type="button" class="header__btn-icon header__btn-wishlist" aria-label="Избранное">♡</button>
-        <button type="button" class="header__btn-cart" aria-label="Корзина">
+        <NuxtLink to="/cart" class="header__btn-cart" aria-label="Корзина">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H6" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" />
             <circle cx="10" cy="21" r="1.4" fill="currentColor" />
             <circle cx="18" cy="21" r="1.4" fill="currentColor" />
           </svg>
-          <span class="header__cart-badge">2</span>
-        </button>
+          <ClientOnly>
+            <span v-if="cartCount > 0" class="header__cart-badge">{{ cartCount }}</span>
+          </ClientOnly>
+        </NuxtLink>
       </div>
     </div>
 

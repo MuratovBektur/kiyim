@@ -6,6 +6,7 @@ import { Product } from './products/product.entity';
 import { BotAllowedPhone } from './bot/entities/bot-allowed-phone.entity';
 import { BotAuthorizedUser } from './bot/entities/bot-authorized-user.entity';
 import { BotCustomPreset } from './bot/entities/bot-custom-preset.entity';
+import { Order } from './orders/order.entity';
 
 function connectionOptions() {
   const url = new URL(process.env.DATABASE_URL ?? 'postgresql://kiyim:kiyim@localhost:5432/kiyim');
@@ -21,7 +22,7 @@ function connectionOptions() {
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
   ...connectionOptions(),
-  entities: [Seller, Category, Product, BotAllowedPhone, BotAuthorizedUser, BotCustomPreset],
+  entities: [Seller, Category, Product, BotAllowedPhone, BotAuthorizedUser, BotCustomPreset, Order],
   migrations: [__dirname + '/migrations/*.{ts,js}'],
   synchronize: false,
 };

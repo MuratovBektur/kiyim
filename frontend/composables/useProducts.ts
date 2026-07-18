@@ -12,7 +12,7 @@ export interface ProductFilters {
   limit?: number;
 }
 
-function apiBase(): string {
+export function apiBase(): string {
   const config = useRuntimeConfig();
   // SSR runs inside the container and must reach the backend directly over the
   // docker network; the browser only knows the public host and goes through nginx.

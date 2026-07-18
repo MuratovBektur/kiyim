@@ -8,6 +8,7 @@ import { join } from 'path';
 import { BotContext, ADD_PRODUCT_SCENE_ID, EDIT_PRODUCT_SCENE_ID, EditProductState } from './bot.context';
 import { BotAuthService } from './auth/bot-auth.service';
 import { ProductsBotService } from './products-bot.service';
+import { OrdersBotService } from './orders-bot.service';
 import { AdminSellersService } from './admin-sellers.service';
 import { TelegramPublishService } from './telegram-publish.service';
 import { Seller } from '../sellers/seller.entity';
@@ -26,7 +27,10 @@ const SELLER_PROFILE_FIELD_LABELS: Record<SellerProfileField, string> = {
 type NewSellerSocialField = Extract<SellerProfileField, 'whatsapp' | 'telegramContact' | 'instagram'>;
 const NEW_SELLER_SOCIAL_FIELDS: NewSellerSocialField[] = ['whatsapp', 'telegramContact', 'instagram'];
 
-const MAIN_MENU_KEYBOARD = Markup.keyboard([['➕ Добавить товар', '📋 Список товаров'], ['⚙️ Настройки']]).resize();
+const MAIN_MENU_KEYBOARD = Markup.keyboard([
+  ['➕ Добавить товар', '📋 Список товаров'],
+  ['📦 Заказы', '⚙️ Настройки'],
+]).resize();
 const UPLOADS_ROOT = join(__dirname, '..', '..', 'uploads');
 
 @Injectable()
@@ -36,6 +40,7 @@ export class BotUpdate implements OnModuleInit {
     @InjectBot() private readonly bot: Telegraf<BotContext>,
     private readonly auth: BotAuthService,
     private readonly products: ProductsBotService,
+    private readonly orders: OrdersBotService,
     private readonly adminSellers: AdminSellersService,
     private readonly publisher: TelegramPublishService,
     @InjectRepository(Seller) private readonly sellerRepo: Repository<Seller>,
@@ -46,6 +51,7 @@ export class BotUpdate implements OnModuleInit {
       { command: 'start', description: 'Главное меню' },
       { command: 'add', description: 'Добавить товар' },
       { command: 'list', description: 'Список товаров' },
+      { command: 'orders', description: 'Заказы' },
       { command: 'settings', description: 'Настройки' },
     ]);
   }
@@ -109,6 +115,13 @@ export class BotUpdate implements OnModuleInit {
   async onList(@Ctx() ctx: BotContext) {
     if (await this.denyIfUnauthorized(ctx)) return;
     await this.renderCard(ctx, 0);
+  }
+
+  @Command('orders')
+  @Hears('📦 Заказы')
+  async onOrders(@Ctx() ctx: BotContext) {
+    if (await this.denyIfUnauthorized(ctx)) return;
+    await this.renderOrderCard(ctx, 0);
   }
 
   @Command('settings')
@@ -185,11 +198,11 @@ export class BotUpdate implements OnModuleInit {
     ].join('\n');
 
     const navRow = [
-      Markup.button.callback('◀️', `card_nav:${clampedOffset - 1}`),
-      Markup.button.callback('▶️', `card_nav:${clampedOffset + 1}`),
+      ...(clampedOffset > 0 ? [Markup.button.callback('◀️', `card_nav:${clampedOffset - 1}`)] : []),
+      ...(clampedOffset < total - 1 ? [Markup.button.callback('▶️', `card_nav:${clampedOffset + 1}`)] : []),
     ];
     const keyboard = Markup.inlineKeyboard([
-      navRow,
+      ...(navRow.length ? [navRow] : []),
       [Markup.button.callback('✏️ Изменить', `edit_product:${product.id}`), Markup.button.callback('🗑 Удалить', `delete_product:${product.id}`)],
       [Markup.button.callback(product.isPublished ? '🔁 Переопубликовать' : '📤 Опубликовать', `publish_product:${product.id}`)],
     ]);
@@ -224,6 +237,73 @@ export class BotUpdate implements OnModuleInit {
       ? await ctx.replyWithPhoto({ source: buffer }, { caption, parse_mode: 'HTML', ...keyboard })
       : await ctx.reply(caption, { parse_mode: 'HTML', ...keyboard });
     session.listCardMessageId = message.message_id;
+  }
+
+  // ---- order list pagination ----
+
+  @Action(/^order_nav:(-?\d+)$/)
+  async onOrderNav(@Ctx() ctx: BotContext) {
+    await ctx.answerCbQuery().catch(() => undefined);
+    const offset = Number((ctx as any).match?.[1]);
+    await this.renderOrderCard(ctx, offset);
+  }
+
+  private async renderOrderCard(ctx: BotContext, offset: number) {
+    const sellerId = this.requireAuth(ctx);
+    if (!sellerId) return;
+    const session = ctx.session as any;
+    const { order, total } = await this.orders.listForSeller(sellerId, Math.max(offset, 0));
+
+    if (!order) {
+      if (session.orderCardMessageId) {
+        await ctx.deleteMessage(session.orderCardMessageId).catch(() => undefined);
+        session.orderCardMessageId = undefined;
+      }
+      await ctx.reply('Заказов пока нет.');
+      return;
+    }
+
+    const clampedOffset = Math.max(offset, 0);
+    const itemLines = order.items.map((item) => {
+      const attrs = [item.size && `размер ${item.size}`, item.color && `цвет ${item.color}`]
+        .filter(Boolean)
+        .join(', ');
+      const lineTotal = (Number(item.price) * item.quantity).toLocaleString('ru-RU');
+      return `• ${escapeHtml(item.title)}${attrs ? ` (${attrs})` : ''} × ${item.quantity} — ${lineTotal} ${item.currency}`;
+    });
+
+    const caption = [
+      `<b>Заказ от ${order.createdAt.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</b>`,
+      ...itemLines,
+      '',
+      `Итого: ${Number(order.total).toLocaleString('ru-RU')} ${order.currency}`,
+      `Имя клиента: ${escapeHtml(order.name)}`,
+      `Телефон клиента: ${escapeHtml(order.phone)}`,
+      `\nЗаказ ${clampedOffset + 1} из ${total}`,
+    ].join('\n');
+
+    const navRow = [
+      ...(clampedOffset > 0 ? [Markup.button.callback('◀️', `order_nav:${clampedOffset - 1}`)] : []),
+      ...(clampedOffset < total - 1 ? [Markup.button.callback('▶️', `order_nav:${clampedOffset + 1}`)] : []),
+    ];
+    const keyboard = Markup.inlineKeyboard(navRow.length ? [navRow] : []);
+
+    if (session.orderCardMessageId) {
+      try {
+        await ctx.telegram.editMessageText(ctx.chat!.id, session.orderCardMessageId, undefined, caption, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard.reply_markup,
+        });
+        return;
+      } catch {
+        // message gone — send a fresh one below
+        await ctx.deleteMessage(session.orderCardMessageId).catch(() => undefined);
+        session.orderCardMessageId = undefined;
+      }
+    }
+
+    const message = await ctx.reply(caption, { parse_mode: 'HTML', ...keyboard });
+    session.orderCardMessageId = message.message_id;
   }
 
   // ---- edit / publish / delete actions (used from /list and post-creation cards) ----

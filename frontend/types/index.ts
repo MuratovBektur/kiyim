@@ -47,3 +47,45 @@ export interface ProductsResponse {
   limit: number;
   totalPages: number;
 }
+
+export interface CartItem {
+  productId: string;
+  size: string | null;
+  color: string | null;
+  quantity: number;
+  product: Product;
+}
+
+export interface CreateOrderItemInput {
+  productId: string;
+  size?: string | null;
+  color?: string | null;
+  quantity: number;
+}
+
+export interface CreateOrderPayload {
+  name: string;
+  phone: string;
+  items: CreateOrderItemInput[];
+}
+
+export interface OrderItem {
+  productId: string;
+  title: string;
+  size: string | null;
+  color: string | null;
+  quantity: number;
+  price: string;
+  currency: string;
+}
+
+export interface Order {
+  id: string;
+  name: string;
+  phone: string;
+  sellerId: string;
+  items: OrderItem[];
+  total: string;
+  currency: string;
+  createdAt: string;
+}
