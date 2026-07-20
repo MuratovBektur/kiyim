@@ -3,6 +3,7 @@ const search = useState<string>('catalogSearch', () => '');
 const mobileMenuOpen = ref(false);
 const mobileSearchOpen = ref(false);
 const { count: cartCount } = useCart();
+const { count: wishlistCount } = useWishlist();
 
 let debounceTimer: ReturnType<typeof setTimeout>;
 function onInput(e: Event) {
@@ -49,7 +50,19 @@ watch(mobileMenuOpen, (v) => {
             <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
-        <button type="button" class="header__btn-icon header__btn-wishlist" aria-label="Избранное">♡</button>
+        <NuxtLink to="/favorites" class="header__btn-icon header__btn-wishlist" aria-label="Избранное">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 20.5s-7.5-4.6-10-9.3C.5 8 1.7 4.5 5 3.4c2.2-.7 4.4.2 5.6 2 .3.4.9.4 1.2 0 1.2-1.8 3.4-2.7 5.6-2 3.3 1.1 4.5 4.6 3 7.8-2.5 4.7-10 9.3-10 9.3Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <ClientOnly>
+            <span v-if="wishlistCount > 0" class="header__wishlist-badge">{{ wishlistCount }}</span>
+          </ClientOnly>
+        </NuxtLink>
         <NuxtLink to="/cart" class="header__btn-cart" aria-label="Корзина">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H6" stroke="currentColor" stroke-width="2"
@@ -242,7 +255,26 @@ watch(mobileMenuOpen, (v) => {
   }
 
   &__btn-wishlist {
+    position: relative;
     display: flex;
+  }
+
+  &__wishlist-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding-inline: 0.2rem;
+    border-radius: 999px;
+    background-color: #f87171;
+    color: $ink-900;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
   }
 
   &__btn-cart {

@@ -14,8 +14,15 @@ const allPhotos = computed(() => {
 const activePhotoUrl = computed(() => photoVariantUrl(allPhotos.value[activePhotoIndex.value], 'gallery'));
 
 const { items, addToCart, removeItem, setQuantity } = useCart();
+const { isWishlisted, toggleWishlist } = useWishlist();
 const selectedSize = ref<string | null>(null);
 const selectedColor = ref<string | null>(null);
+
+const wishlisted = computed(() => (product.value ? isWishlisted(product.value.id) : false));
+
+function handleToggleWishlist() {
+  if (product.value) toggleWishlist(product.value);
+}
 
 watchEffect(() => {
   if (product.value?.sizes?.length && !selectedSize.value) selectedSize.value = product.value.sizes[0];
@@ -96,7 +103,27 @@ const socialLinks = computed(() => {
         </div>
 
         <div class="pd__info">
-          <h1 class="pd__title">{{ product.title }}</h1>
+          <div class="pd__title-row">
+            <h1 class="pd__title">{{ product.title }}</h1>
+            <ClientOnly>
+              <button
+                type="button"
+                class="pd__wishlist"
+                :class="{ 'pd__wishlist--active': wishlisted }"
+                :aria-label="wishlisted ? 'Убрать из избранного' : 'Добавить в избранное'"
+                @click="handleToggleWishlist"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" :fill="wishlisted ? 'currentColor' : 'none'">
+                  <path
+                    d="M12 20.5s-7.5-4.6-10-9.3C.5 8 1.7 4.5 5 3.4c2.2-.7 4.4.2 5.6 2 .3.4.9.4 1.2 0 1.2-1.8 3.4-2.7 5.6-2 3.3 1.1 4.5 4.6 3 7.8-2.5 4.7-10 9.3-10 9.3Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </ClientOnly>
+          </div>
           <p class="pd__category">{{ product.category.name }}</p>
           <p class="pd__price">{{ Number(product.price).toLocaleString('ru-RU') }} {{ product.currency }}</p>
 
@@ -285,6 +312,13 @@ const socialLinks = computed(() => {
     }
   }
 
+  &__title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
   &__title {
     font-size: 1.5rem;
     font-weight: 700;
@@ -293,6 +327,23 @@ const socialLinks = computed(() => {
     @include r($bp-sm) {
       font-size: 1.875rem;
     }
+  }
+
+  &__wishlist {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    color: $stone-300;
+    flex-shrink: 0;
+    @include glass;
+    transition: color 0.2s, transform 0.15s;
+
+    &:hover { transform: scale(1.08); }
+
+    &--active { color: #f87171; }
   }
 
   &__category {

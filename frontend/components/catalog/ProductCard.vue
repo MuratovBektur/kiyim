@@ -7,6 +7,15 @@ const props = defineProps<{ product: Product; index?: number }>();
 // everything below the fold is lazy.
 const CARDS_PER_ROW = 3;
 const loading = computed(() => ((props.index ?? CARDS_PER_ROW) < CARDS_PER_ROW ? 'eager' : 'lazy'));
+
+const { isWishlisted, toggleWishlist } = useWishlist();
+const wishlisted = computed(() => isWishlisted(props.product.id));
+
+function onToggleWishlist(e: MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  toggleWishlist(props.product);
+}
 </script>
 
 <template>
@@ -17,6 +26,24 @@ const loading = computed(() => ((props.index ?? CARDS_PER_ROW) < CARDS_PER_ROW ?
   >
     <div class="product-card__image-wrap">
       <span v-if="!product.inStock" class="product-card__badge">Нет в наличии</span>
+      <ClientOnly>
+        <button
+          type="button"
+          class="product-card__wishlist"
+          :class="{ 'product-card__wishlist--active': wishlisted }"
+          :aria-label="wishlisted ? 'Убрать из избранного' : 'Добавить в избранное'"
+          @click="onToggleWishlist"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" :fill="wishlisted ? 'currentColor' : 'none'">
+            <path
+              d="M12 20.5s-7.5-4.6-10-9.3C.5 8 1.7 4.5 5 3.4c2.2-.7 4.4.2 5.6 2 .3.4.9.4 1.2 0 1.2-1.8 3.4-2.7 5.6-2 3.3 1.1 4.5 4.6 3 7.8-2.5 4.7-10 9.3-10 9.3Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </ClientOnly>
       <img
         :src="photoVariantUrl(product.photos[0], 'card')"
         :alt="product.title"
@@ -79,6 +106,34 @@ const loading = computed(() => ((props.index ?? CARDS_PER_ROW) < CARDS_PER_ROW ?
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  &__wishlist {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    color: $stone-100;
+    background-color: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(4px);
+    transition: color 0.2s, transform 0.15s;
+
+    &:hover { transform: scale(1.1); }
+
+    &--active { color: #f87171; }
+
+    @include r($bp-sm) {
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 2rem;
+      height: 2rem;
+    }
   }
 
   &__info {
