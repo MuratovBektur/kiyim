@@ -24,7 +24,7 @@ export class Product {
   @Column('decimal', { precision: 10, scale: 2 })
   price: string;
 
-  @Column({ default: 'KZT' })
+  @Column({ default: 'сом' })
   currency: string;
 
   @Column('text', { array: true, default: '{}' })

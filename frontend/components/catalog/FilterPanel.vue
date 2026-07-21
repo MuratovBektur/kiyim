@@ -37,7 +37,7 @@ function toggleSize(s: string) {
     </div>
 
     <div class="filter__group" :class="{ 'filter__group--card': props.card }">
-      <h3 class="filter__heading">Цена, ₸</h3>
+      <h3 class="filter__heading">Цена, сом</h3>
       <div class="filter__price-range">
         <input v-model.number="minPrice" type="number" placeholder="от" class="filter__price-input" />
         <input v-model.number="maxPrice" type="number" placeholder="до" class="filter__price-input" />
