@@ -1,8 +1,3 @@
-<script setup lang="ts">
-import type { Product } from '~/types';
-defineProps<{ featuredProduct?: Product }>();
-</script>
-
 <template>
   <section class="hero">
     <div class="hero__noise" aria-hidden="true" />
@@ -21,22 +16,6 @@ defineProps<{ featuredProduct?: Product }>();
         <div class="hero__actions">
           <a href="#catalog" class="hero__btn hero__btn--primary">В каталог</a>
           <a href="#catalog" class="hero__btn hero__btn--secondary">Смотреть дроп</a>
-        </div>
-      </div>
-
-      <div class="hero__visual">
-        <div class="hero__image-wrap">
-          <img
-            :src="photoVariantUrl(featuredProduct?.photos[0], 'gallery') ?? 'https://picsum.photos/seed/kiyim-hero/600/700'"
-            :alt="featuredProduct?.title ?? 'kiyim'"
-            class="hero__image"
-          />
-        </div>
-        <div v-if="featuredProduct" class="hero__featured">
-          <p class="hero__featured-label">Сейчас в топе</p>
-          <p class="hero__featured-price">
-            {{ Number(featuredProduct.price).toLocaleString('ru-RU') }} {{ featuredProduct.currency }}
-          </p>
         </div>
       </div>
     </div>
@@ -68,11 +47,6 @@ defineProps<{ featuredProduct?: Product }>();
     @include r($bp-sm) {
       padding-block: 5rem;
       gap: 2.5rem;
-    }
-
-    @include r($bp-hero) {
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
     }
   }
 
@@ -171,66 +145,6 @@ defineProps<{ featuredProduct?: Product }>();
       @include glass;
       &:hover { border-color: rgba($lime-400, 0.5); }
     }
-  }
-
-  &__visual {
-    position: relative;
-    height: 12rem;
-
-    @include r($bp-sm) { height: 16rem; }
-    @include r($bp-hero) { height: 26.25rem; }
-  }
-
-  &__image-wrap {
-    position: absolute;
-    inset: 0;
-    border-radius: 1.5rem;
-    overflow: hidden;
-    outline: 1px solid rgba(255, 255, 255, 0.1);
-    outline-offset: -1px;
-    @include glass;
-    @include glow;
-    @include card-lift;
-  }
-
-  &__image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.9;
-  }
-
-  &__featured {
-    position: absolute;
-    bottom: -1.25rem;
-    left: -1rem;
-    @include glass;
-    border-radius: 1rem;
-    padding: 0.75rem;
-    width: 9rem;
-
-    @include r($bp-sm) {
-      bottom: -1.5rem;
-      left: -1.5rem;
-      padding: 1rem;
-      width: 12rem;
-    }
-  }
-
-  &__featured-label {
-    font-size: 10px;
-    color: $stone-400;
-
-    @include r($bp-sm) { font-size: 0.75rem; }
-  }
-
-  &__featured-price {
-    font-weight: 700;
-    color: $lime-400;
-    font-size: 0.875rem;
-    margin-top: 0.125rem;
-
-    @include r($bp-sm) { font-size: 1rem; }
   }
 }
 

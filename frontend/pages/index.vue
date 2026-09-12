@@ -27,13 +27,11 @@ watch([search, categorySlug, sellerSlug, minPrice, maxPrice, sort], () => { page
 const { data: categories } = await useCategoriesList();
 const { data: sellers } = await useSellersList();
 const { data: productsData, pending } = useProductsList(query);
-
-const featuredProduct = computed(() => productsData.value?.items[0]);
 </script>
 
 <template>
   <div>
-    <HeroBanner :featured-product="featuredProduct" />
+    <HeroBanner />
 
     <CategoryChips v-model:category-slug="categorySlug" :categories="categories ?? []" />
 
