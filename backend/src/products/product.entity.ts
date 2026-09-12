@@ -79,4 +79,16 @@ export class Product {
   @ManyToOne(() => Category, (category) => category.products, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'categoryId' })
   category: Category;
+
+  // Заполнено только у товаров, пришедших из внешней интеграции (см.
+  // src/integrations) — например 'mir-jeans'. externalId — id товара в
+  // системе-источнике, используется для upsert при повторных публикациях
+  // и для удаления при снятии товара там. Уникальность пары обеспечена
+  // частичным индексом в БД (см. миграцию AddExternalSource), а не тут —
+  // TypeORM не поддерживает partial unique index через декоратор.
+  @Column({ type: 'text', nullable: true })
+  externalSource: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  externalId: string | null;
 }

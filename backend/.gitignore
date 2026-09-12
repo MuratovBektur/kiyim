@@ -2,3 +2,6 @@ node_modules/
 dist/
 .env
 uploads/
+# Реальные ключи поставщиков (см. config/suppliers-clients.example.json) —
+# заполняется вручную на каждом окружении, в гит не идёт.
+config/suppliers-clients.json

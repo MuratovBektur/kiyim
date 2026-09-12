@@ -6,6 +6,7 @@ import { SellersModule } from './sellers/sellers.module';
 import { CategoriesModule } from './categories/categories.module';
 import { OrdersModule } from './orders/orders.module';
 import { BotModule } from './bot/bot.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 
 const botEnabled = Boolean(process.env.TELEGRAM_BOT_TOKEN);
 if (!botEnabled) {
@@ -19,6 +20,7 @@ if (!botEnabled) {
     SellersModule,
     CategoriesModule,
     OrdersModule,
+    IntegrationsModule,
     ...(botEnabled ? [BotModule] : []),
   ],
 })

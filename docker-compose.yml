@@ -15,8 +15,22 @@ services:
       ALLOWED_PHONES: ${ALLOWED_PHONES:-}
       SELLER_PROFILES: ${SELLER_PROFILES:-}
       BOT_ADMIN_SELLER_SLUGS: ${BOT_ADMIN_SELLER_SLUGS:-}
+      MIR_JEANS_INGEST_TOKEN: ${MIR_JEANS_INGEST_TOKEN:-}
+    # Нужно для локального теста интеграции с "Мир Джинс": её вебхук шлёт
+    # ссылки на фото вида http://host.docker.internal:<порт> (см. её
+    # KIYIM_PUBLIC_BASE_URL), а backend их скачивает при upsert — без этой
+    # записи хост не резолвится в контейнере на Linux (на Mac/Windows Docker
+    # добавляет её сам). Не мешает проду: там ссылки — обычный публичный
+    # домен, host.docker.internal просто не используется.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - backend-uploads:/app/uploads
+      # Ключи поставщиков (config/suppliers-clients.json, см.
+      # src/integrations/suppliers) — редактируются вручную прямо на
+      # хосте/сервере, без пересборки образа. Файл в .gitignore, в
+      # репозитории только .example рядом.
+      - ./backend/config:/app/config:ro
     networks:
       - kiyim-network
     restart: unless-stopped
