@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Action, Command, Ctx, Hears, InjectBot, On, Start, Update } from 'nestjs-telegraf';
@@ -36,6 +36,8 @@ const UPLOADS_ROOT = join(__dirname, '..', '..', 'uploads');
 @Injectable()
 @Update()
 export class BotUpdate implements OnModuleInit {
+  private readonly logger = new Logger(BotUpdate.name);
+
   constructor(
     @InjectBot() private readonly bot: Telegraf<BotContext>,
     private readonly auth: BotAuthService,
@@ -47,13 +49,30 @@ export class BotUpdate implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.bot.telegram.setMyCommands([
-      { command: 'start', description: 'Главное меню' },
-      { command: 'add', description: 'Добавить товар' },
-      { command: 'list', description: 'Список товаров' },
-      { command: 'orders', description: 'Заказы' },
-      { command: 'settings', description: 'Настройки' },
-    ]);
+    // launchOptions: false в BotModule отключил автозапуск от nestjs-telegraf
+    // — сами запускаем long polling. bot.launch() резолвится только когда
+    // бот остановлен (см. Telegraf.launch -> startPolling -> Polling.loop),
+    // поэтому НЕ ждём его — как и делала сама nestjs-telegraf, просто теперь
+    // с .catch: сбой (например, таймаут getMe при старте) не поднимет бота,
+    // но не уронит остальное приложение.
+    this.bot.launch().catch((err) => {
+      this.logger.warn(`Не удалось запустить бота (long polling): ${(err as Error).message}`);
+    });
+
+    // Список команд в меню бота — косметика, не критично для работы. Не даём
+    // сбою сети до api.telegram.org (таймаут и т.п.) уронить весь бэкенд при
+    // старте контейнера.
+    try {
+      await this.bot.telegram.setMyCommands([
+        { command: 'start', description: 'Главное меню' },
+        { command: 'add', description: 'Добавить товар' },
+        { command: 'list', description: 'Список товаров' },
+        { command: 'orders', description: 'Заказы' },
+        { command: 'settings', description: 'Настройки' },
+      ]);
+    } catch (err) {
+      this.logger.warn(`Не удалось задать список команд бота: ${(err as Error).message}`);
+    }
   }
 
   private requireAuth(ctx: BotContext): string | null {

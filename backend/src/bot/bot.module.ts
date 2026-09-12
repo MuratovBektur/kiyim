@@ -26,6 +26,12 @@ import { BotUpdate } from './bot.update';
       useFactory: () => ({
         token: process.env.TELEGRAM_BOT_TOKEN ?? '',
         middlewares: [session()],
+        // nestjs-telegraf иначе сама дёргает bot.launch() без await и без
+        // .catch — сбой сети до api.telegram.org (getMe при старте) валится
+        // необработанным отклонением промиса и роняет весь процесс, включая
+        // не имеющий отношения к боту публичный API каталога. Запускаем bot
+        // сами в BotUpdate.onModuleInit, с .catch — см. там.
+        launchOptions: false,
       }),
     }),
     TypeOrmModule.forFeature([Product, Category, Seller, Order, BotAllowedPhone, BotAuthorizedUser, BotCustomPreset]),
