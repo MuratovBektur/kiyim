@@ -35,6 +35,19 @@ export function photoVariantUrl(path: string | undefined | null, variant: PhotoV
   return `${apiBase()}${variantPath}`;
 }
 
+// Товары из интеграции "Мир Джинс" (см. backend/src/integrations/mir-jeans)
+// иногда несут видео вместо фото — та ссылка кладётся в photos/extraPhotos
+// как есть, без локальных -card/-gallery/-thumb вариантов (см.
+// MirJeansIngestService.storeMedia), поэтому и определяем её здесь по
+// расширению, а не по /uploads/ префиксу.
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.avi', '.mkv'];
+
+export function isVideoUrl(path: string | undefined | null): boolean {
+  if (!path) return false;
+  const lower = path.toLowerCase();
+  return VIDEO_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
 export function useProductsList(filters: Ref<ProductFilters> | ComputedRef<ProductFilters>) {
   return useFetch<ProductsResponse>(() => `${apiBase()}/products`, {
     query: filters,

@@ -91,13 +91,17 @@ const socialLinks = computed(() => {
         <div>
           <div class="pd__image-wrap" :class="{ 'pd__image-wrap--oos': !product.inStock }">
             <span v-if="!product.inStock" class="pd__oos-badge">Нет в наличии</span>
-            <img :src="activePhotoUrl" :alt="product.title" class="pd__image" />
+            <video v-if="isVideoUrl(activePhotoUrl)" :key="activePhotoUrl" :src="activePhotoUrl" autoplay muted loop
+              playsinline class="pd__image"></video>
+            <img v-else :src="activePhotoUrl" :alt="product.title" class="pd__image" />
           </div>
 
           <div v-if="allPhotos.length > 1" class="pd__thumbs">
             <button v-for="(photo, index) in allPhotos" :key="photo" type="button" class="pd__thumb"
               :class="{ 'pd__thumb--active': index === activePhotoIndex }" @click="activePhotoIndex = index">
-              <img :src="photoVariantUrl(photo, 'thumb')" :alt="`${product.title} ${index + 1}`" />
+              <video v-if="isVideoUrl(photo)" :src="photoVariantUrl(photo, 'thumb')" autoplay muted loop
+                playsinline></video>
+              <img v-else :src="photoVariantUrl(photo, 'thumb')" :alt="`${product.title} ${index + 1}`" />
             </button>
           </div>
         </div>
@@ -293,13 +297,17 @@ const socialLinks = computed(() => {
     opacity: 0.6;
     transition: opacity 0.2s, outline-color 0.2s;
 
-    img {
+    img, video {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
+      // On video, some mobile browsers intercept the tap for native
+      // fullscreen/controls instead of letting it reach the wrapping
+      // <button>, so the thumbnail never switches the active photo.
+      pointer-events: none;
     }
 
     &:hover {

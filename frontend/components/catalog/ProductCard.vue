@@ -44,7 +44,17 @@ function onToggleWishlist(e: MouseEvent) {
           </svg>
         </button>
       </ClientOnly>
+      <video
+        v-if="isVideoUrl(product.photos[0])"
+        :src="photoVariantUrl(product.photos[0], 'card')"
+        autoplay
+        muted
+        loop
+        playsinline
+        class="product-card__image"
+      ></video>
       <img
+        v-else
         :src="photoVariantUrl(product.photos[0], 'card')"
         :alt="product.title"
         class="product-card__image"
@@ -106,6 +116,9 @@ function onToggleWishlist(e: MouseEvent) {
     height: 100%;
     object-fit: cover;
     display: block;
+    // On video, some mobile browsers intercept the tap for native
+    // fullscreen/controls instead of letting it reach the wrapping link.
+    pointer-events: none;
   }
 
   &__wishlist {
