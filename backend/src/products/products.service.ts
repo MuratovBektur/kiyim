@@ -15,7 +15,8 @@ export class ProductsService {
     const qb = this.productRepo
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.seller', 'seller')
-      .leftJoinAndSelect('product.category', 'category');
+      .leftJoinAndSelect('product.category', 'category')
+      .where('product.isPublished = true');
 
     if (query.search) {
       qb.andWhere('product.title ILIKE :search', { search: `%${query.search}%` });
@@ -56,7 +57,7 @@ export class ProductsService {
 
   async findOne(id: string) {
     const product = await this.productRepo.findOne({
-      where: { id },
+      where: { id, isPublished: true },
       relations: { seller: true, category: true },
     });
     if (!product) {
